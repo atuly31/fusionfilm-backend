@@ -12,88 +12,25 @@ import pgSession from "connect-pg-simple";
 dotenv.config();
 const app = express();
 const PORT = 4000;
-// db.connect();
 app.use(express.json());
-app.use(cors());
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "http://localhost:3000",
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
 
-app.use(
-    session({
-      secret:  "fallbackSecret",
-      resave: true,
-      saveUninitialized: true, // Do not save empty sessions
-      cookie: { maxAge: 24 * 60 * 60 * 1000 },
-    })
-  );
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-let Current_user_id = null;
-
-passport.use(
-  new LocalStrategy({ usernameField: "email" }, async function verify(
-    email,
-    password,
-    done
-  ) {
-    try {
-      const data = await db.query(
-        "SELECT * FROM user_details WHERE email = ($1)",
-        [email]
-      );
-    
-
-      console.log("Data from DB:", data.rowCount);
-      console.log("Password from DB:", password);
-      if (data.rowCount === 0) {
-        return done(null, false, { message: "No user found" });
-      }
-      
-      const storedPassword = data.rows[0].password;
-      console.log(storedPassword)
-    //   Current_user_id = data[0].id;
-    //   console.log("Current uSer:", Current_user_id);
-      const isMatch = await bcrypt.compare(password, storedPassword);
-      if (isMatch) {
-        return done(null, data.rows[0]);
-      } else {
-        return done(null, false, { message: "Invalid password" });
-      }
-    } catch (err) {
-      console.log("Inside Catch Block", err);
-      return done(err);
-    }
-  })
-);
-
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-  try {
-    console.log("Deserializing user with id:", id);
-    const user = await db.query("SELECT * FROM user_details WHERE id = $1", [
-      id,
-    ]);
-    done(null, user.rows[0]);
-  } catch (err) {
-    done(err);
-  }
-});
-
 // Routes
 app.post("/loginSignup", async (req, res) => {
-  const { name, password, email, action } = req.body;
-  console.log(name, password, email);
+  const {action} = req.body
+  console.log(action)
   if (action === "register") {
+    const { name, password, email } = req.body;
+    console.log("Register",name, password, email);
     try {
       console.log("Checking if user already exists...");
       const CheckUser = await db.query(
@@ -116,10 +53,11 @@ app.post("/loginSignup", async (req, res) => {
         [hash, email, name]
       );
       console.log("New user inserted:", newUser);
-
-      // Current_user_id = newUser.rows[0].id;
-      res.status(201).send(newUser.rows);
+    //  const{id,email,name} = newUser.rows[0]
+       // Current_user_id = newUser.rows[0].id;
+      res.status(201).send(newUser.rows[0]);
     } catch (error) {
+      console.log("Inside catch")
       console.error(
         "Registration Error you are in catch block now :",
         error.message
@@ -130,28 +68,41 @@ app.post("/loginSignup", async (req, res) => {
 
   if (action === "login") {
     const { password, email } = req.body;
-    console.log(password, email);
-    passport.authenticate("local", (err, user, info) => {
-      if (err) {
-        return res.status(500).send("Error during login");
+    console.log("login", password, email);
+  
+    try {
+      const data = await db.query(
+        "SELECT * FROM user_details WHERE email = ($1)",
+        [email]
+      );
+  
+      console.log("Data from DB:", data.rowCount);
+  
+      if (data.rowCount === 0) {
+        return res.status(401).send("No user found");
       }
-      if (!user) {
-        return res.status(401).send(info.message || "Invalid credentials");
+  
+      const storedPassword = data.rows[0].password;
+      console.log("Password from DB:", storedPassword);
+  
+      const isMatch = await bcrypt.compare(password, storedPassword);
+      if (!isMatch) {
+        return res.status(401).send("Invalid password");
       }
-      req.logIn(user, (err) => {
-        if (err) {
-          return res.status(500).send("Error logging in");
-        }
-        console.log("User in LOGIN", user);
-        return res.status(200).send(user);
-      });
-    })(req, res);
+      return res.status(200).send(data.rows[0])
+      console.log("User authenticated", data.rows[0])
+    } catch (error) {
+      console.error("Error during login:", error);
+      return res.status(500).send("Error during login");
+    }
   }
+  
 });
 
 app.post("/", async (req, res) => {
-  const { currentUser ,title, year, poster, runtime, imdbRating, userRating, imdbID } =
+  const { title, year, poster, runtime, imdbRating, userRating, imdbID } =
     req.body;
+   const {currentUser} = req.body
   console.log("Cuurent user Id in post", currentUser);
   try {
     await db.query(
@@ -200,9 +151,10 @@ app.get("/dashboard", async (req, res) => {
     console.log("in the dashboard",currentUser)
   try {
     const data = await db.query(
-      "SELECT * FROM user_details u1 INNER JOIN likedmovies l1 ON u1.id = l1.user_id WHERE user_id = $1",
+      "SELECT u1.id, u1.email,u1.name,l1.title FROM user_details u1 inner JOIN likedmovies l1 ON u1.id = l1.user_id WHERE user_id = $1",
       [currentUser]
     );
+    console.log(data.rows)
     res.status(200).send(data.rows);
   } catch (error) {
     console.error("Profile Fetch Error:", error.message);
