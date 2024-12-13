@@ -20,7 +20,7 @@ app.use(
     origin: "https://film-fusion-teal.vercel.app",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+
   })
 );
 
