@@ -25,6 +25,10 @@ app.use(
 );
 
 // Routes
+
+app.get('/', async(req, res) => {
+  res.send('Hello World!');
+})
 app.post("/loginSignup", async (req, res) => {
   const { action } = req.body;
   console.log(action);
