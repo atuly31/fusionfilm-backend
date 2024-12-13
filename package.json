@@ -18,7 +18,7 @@
     "body-parser": "^1.20.3",
     "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "node": "^20.18.1",
@@ -27,6 +27,7 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pg": "^8.13.1",
-    "pg-promise": "^11.10.2"
+    "pg-promise": "^11.10.2",
+    "postgres": "^3.4.5"
   }
 }
