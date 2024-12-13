@@ -17,12 +17,14 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: "https://film-fusion-teal.vercel.app/",
+    origin: "https://film-fusion-teal.vercel.app",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
+
+app.options("*", cors());
 
 // Routes
 
